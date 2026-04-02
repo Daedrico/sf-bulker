@@ -2,10 +2,12 @@
 
 A CLI tool for importing CSV data into Salesforce using the Bulk API v2.
 
+Built with native Node.js ESM modules — no Salesforce SDK required.
+
 ## Prerequisites
 
 - Node.js 18+
-- A Salesforce connected app with OAuth client credentials
+- A Salesforce connected app with OAuth 2.0 client credentials flow enabled
 
 ## Setup
 
@@ -42,6 +44,18 @@ Results are written to the `output/` directory as two timestamped files:
 - `<name>_success_<timestamp>.csv`
 - `<name>_failed_<timestamp>.csv`
 
+## Project structure
+
+```
+index.js              # Entry point
+src/
+  sf-bulk.js          # Salesforce Bulk API v2 client (native https)
+  sf-oauth.js         # Salesforce OAuth2 client credentials flow
+source/               # Input CSV files
+output/               # Result CSVs written after each job
+config.json           # Import entries (gitignored, see config.json.example)
+```
+
 ## Configuration
 
 `config.json` is an array of import entries. Each entry supports the following fields:
@@ -74,3 +88,20 @@ Results are written to the `output/` directory as two timestamped files:
 ```
 
 When `mapping` or `skipFields` are defined, a remapped file is generated at `source/<filename>_remapped.<ext>` before the upload. Embedded `\r` characters in field values are automatically stripped to prevent Salesforce Bulk API line ending errors.
+
+## Example output
+
+```
+Processing: export_historique_products.csv | object: Product2 | operation: upsert
+Source file: ./source/export_historique_products_remapped.csv | Operation: upsert | Object: Product2 | External ID: ExternalId__c
+Job 750S900000RIYNAIA5 | State: UploadComplete | Processed: 0     | Failed: 0
+Job 750S900000RIYNAIA5 | State: InProgress     | Processed: 4200  | Failed: 412
+Job 750S900000RIYNAIA5 | State: InProgress     | Processed: 13298 | Failed: 1128
+Job 750S900000RIYNAIA5 | State: InProgress     | Processed: 23298 | Failed: 1912
+Job 750S900000RIYNAIA5 | State: InProgress     | Processed: 33498 | Failed: 2721
+Job 750S900000RIYNAIA5 | State: InProgress     | Processed: 43698 | Failed: 3463
+Job 750S900000RIYNAIA5 | State: InProgress     | Processed: 50698 | Failed: 3999
+Job 750S900000RIYNAIA5 | State: InProgress     | Processed: 51098 | Failed: 4031
+Job 750S900000RIYNAIA5 | State: JobComplete    | Processed: 51098 | Failed: 4031
+Results saved to output/products_2026-04-02T15-46-35.csv
+```

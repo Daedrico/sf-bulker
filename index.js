@@ -60,9 +60,13 @@ const importData = async () => {
   try {
     const jobRequest = {
       'object': object,
+      'contentType': 'CSV',
       'operation': operation,
-      'externalIdFieldName': externalIdField
+      'externalIdFieldName': externalIdField,
+      'lineEnding': 'LF'
     }
+
+    console.log(jobRequest)
 
     const response = await bulkAPI.createAndWaitJobResult(jobRequest, sourceFile)
     console.log(response)

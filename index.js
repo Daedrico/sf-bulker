@@ -10,12 +10,16 @@ const { getAccessToken } = require('./src/sf-oauth')
 
 const applyMapping = (srcFile, destFile, mapping, skipFields = []) => {
   const skip = new Set(skipFields)
-  const activeEntries = Object.entries(mapping).filter(([src]) => !skip.has(src))
+  const activeMapping = Object.fromEntries(
+    Object.entries(mapping).filter(([src]) => !skip.has(src))
+  )
   const transform = new Transform({
     objectMode: true,
     transform(row, _, cb) {
       const out = Object.fromEntries(
-        activeEntries.filter(([src]) => src in row).map(([src, dest]) => [dest, row[src]])
+        Object.entries(row)
+          .filter(([key]) => !skip.has(key))
+          .map(([key, value]) => [activeMapping[key] ?? key, value])
       )
       cb(null, out)
     }

@@ -6,17 +6,6 @@
     "externalIdField": "ExternalId__c",
     "operation": "upsert",
     "mapping": {
-      "AccountSource": "AccountSource",
-      "AccountStatus__c": "AccountStatus__c",
-      "BillingCity": "BillingCity",
-      "BillingCountryCode": "BillingCountryCode",
-      "BillingPostalCode": "BillingPostalCode",
-      "BillingStreet": "BillingStreet",
-      "FirstName": "FirstName",
-      "LastName": "LastName",
-      "PersonBirthdate": "PersonBirthdate",
-      "PersonEmail": "PersonEmail",
-      "PersonMobilePhone": "PersonMobilePhone",
       "RecordType.Name": "RecordType.Name"
     },
     "skipFields": ["AccountSource"]

@@ -1,5 +1,5 @@
-const https = require('https')
-const querystring = require('querystring')
+import https from 'https'
+import querystring from 'querystring'
 
 /**
  * Requests an access token from Salesforce using the OAuth2 client_credentials flow.
@@ -49,5 +49,5 @@ const getAccessToken = ({ clientId, clientSecret, host }) => {
   })
 }
 
-module.exports = { getAccessToken }
+export { getAccessToken }
 

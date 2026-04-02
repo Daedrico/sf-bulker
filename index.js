@@ -1,12 +1,12 @@
-require('dotenv').config()
-const { createReadStream, createWriteStream, readFileSync } = require('fs')
-const { mkdir, writeFile } = require('fs/promises')
-const { pipeline } = require('stream/promises')
-const { Transform } = require('stream')
-const { parse } = require('csv-parse')
-const { stringify } = require('csv-stringify')
-const { BulkAPI, MonitorJob } = require('client-sf-bulk2')
-const { getAccessToken } = require('./src/sf-oauth')
+import 'dotenv/config'
+import { createReadStream, createWriteStream, readFileSync } from 'fs'
+import { mkdir, writeFile } from 'fs/promises'
+import { pipeline } from 'stream/promises'
+import { Transform } from 'stream'
+import { parse } from 'csv-parse'
+import { stringify } from 'csv-stringify'
+import { BulkAPI, MonitorJob } from './src/sf-bulk.js'
+import { getAccessToken } from './src/sf-oauth.js'
 
 const applyMapping = (srcFile, destFile, mapping, skipFields = []) => {
   const skip = new Set(skipFields)
@@ -63,7 +63,7 @@ const importData = async () => {
   })
 
   MonitorJob.on('monitoring', (state) => {
-    console.log(state)
+    console.log(`Job ${state.jobId} - State: ${state.state} | Records Processed: ${state.numberRecordsProcessed} | Records Failed: ${state.numberRecordsFailed}`)
   })
 
   const { filename, object, externalIdField, operation, mapping, skipFields } = entry
@@ -84,11 +84,9 @@ const importData = async () => {
       'externalIdFieldName': externalIdField,
       'lineEnding': 'LF'
     }
-
-    console.log(jobRequest)
+    console.log(`Source file: ${sourceFile} | Operation: ${operation} | Object: ${object} | External ID: ${externalIdField ?? 'N/A'}`)
 
     const response = await bulkAPI.createAndWaitJobResult(jobRequest, sourceFile)
-    console.log(response)
 
     const finalStateJob = await bulkAPI.waitJobEnd(response.id)
 

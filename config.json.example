@@ -8,29 +8,17 @@
     "mapping": {
       "AccountSource": "AccountSource",
       "AccountStatus__c": "AccountStatus__c",
-      "AcquisitionDate__c": "AcquisitionDate__c",
       "BillingCity": "BillingCity",
       "BillingCountryCode": "BillingCountryCode",
       "BillingPostalCode": "BillingPostalCode",
       "BillingStreet": "BillingStreet",
-      "CoffeeMatchProfileAromaticGroup__c": "CoffeeMatchProfileAromaticGroup__c",
-      "CoffeeMatchProfileRoasterColors__c": "CoffeeMatchProfileRoasterColors__c",
       "FirstName": "FirstName",
-      "Language__c": "Language__c",
       "LastName": "LastName",
-      "LastOrderDate__c": "LastOrderDate__c",
-      "LegacyCustomerCode__c": "LegacyCustomerCode__c",
-      "MktConsentLastUpdateDate__c": "MktConsentLastUpdateDate__c",
-      "MktConsentUpdateSource__c": "MktConsentUpdateSource__c",
-      "MktConsent__c": "MktConsent__c",
       "PersonBirthdate": "PersonBirthdate",
       "PersonEmail": "PersonEmail",
       "PersonMobilePhone": "PersonMobilePhone",
       "RecordType.Name": "RecordType.Name"
     },
-    "skipFields": [
-      "CoffeeMatchProfileAromaticGroup__c",
-      "CoffeeMatchProfileRoasterColors__c"
-    ]
+    "skipFields": ["AccountSource"]
   }
 ]

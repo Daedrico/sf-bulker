@@ -5,6 +5,7 @@ import { pipeline } from 'stream/promises'
 import { Transform } from 'stream'
 import { parse } from 'csv-parse'
 import { stringify } from 'csv-stringify'
+import chalk from 'chalk'
 import { BulkAPI, MonitorJob } from './src/sf-bulk.js'
 import { getAccessToken } from './src/sf-oauth.js'
 
@@ -36,7 +37,7 @@ const applyMapping = (srcFile, destFile, mapping, skipFields = []) => {
 const configName = process.argv[2]
 
 if (!configName) {
-  console.error('Usage: npm run import -- <name>')
+  console.error(chalk.red('Usage: npm run import -- <name>'))
   process.exit(1)
 }
 
@@ -46,7 +47,7 @@ const importData = async () => {
 
   const entry = entries.find(e => e.name === configName)
   if (!entry) {
-    console.error(`No config entry found with name: "${configName}"`)
+    console.error(chalk.red(`No config entry found with name: "${configName}"`))
     process.exit(1)
   }
 
@@ -63,11 +64,16 @@ const importData = async () => {
   })
 
   MonitorJob.on('monitoring', (state) => {
-    console.log(`Job ${state.jobId} - State: ${state.state} | Records Processed: ${state.numberRecordsProcessed} | Records Failed: ${state.numberRecordsFailed}`)
+    console.log(
+      chalk.cyan(`Job ${state.id}`) +
+      chalk.gray(' | State: ') + chalk.yellow(state.state) +
+      chalk.gray(' | Processed: ') + chalk.white(state.numberRecordsProcessed) +
+      chalk.gray(' | Failed: ') + (state.numberRecordsFailed > 0 ? chalk.red(state.numberRecordsFailed) : chalk.green(state.numberRecordsFailed))
+    )
   })
 
   const { filename, object, externalIdField, operation, mapping, skipFields } = entry
-  console.log(`\nProcessing: ${filename} | object: ${object} | operation: ${operation}`)
+  console.log('\n' + chalk.bold.blue(`Processing: ${filename}`) + chalk.gray(` | object: ${object} | operation: ${operation}`))
 
   let sourceFile = `./source/${filename}`
 
@@ -84,7 +90,7 @@ const importData = async () => {
       'externalIdFieldName': externalIdField,
       'lineEnding': 'LF'
     }
-    console.log(`Source file: ${sourceFile} | Operation: ${operation} | Object: ${object} | External ID: ${externalIdField ?? 'N/A'}`)
+    console.log(chalk.gray(`Source file: ${sourceFile} | Operation: ${operation} | Object: ${object} | External ID: ${externalIdField ?? 'N/A'}`))
 
     const response = await bulkAPI.createAndWaitJobResult(jobRequest, sourceFile)
 
@@ -98,10 +104,10 @@ const importData = async () => {
       await mkdir('./output', { recursive: true })
       await writeFile(`./output/${baseName}_success_${timestamp}.csv`, successfulRecords)
       await writeFile(`./output/${baseName}_failed_${timestamp}.csv`, failedRecords)
-      console.log(`Results saved to output/${baseName}_*_${timestamp}.csv`)
+      console.log(chalk.green.bold(`Results saved to output/${baseName}_*_${timestamp}.csv`))
     }
   } catch (e) {
-    console.error(`Error processing ${filename}:`, e)
+    console.error(chalk.red.bold(`Error processing ${filename}:`), e)
   }
 }
 

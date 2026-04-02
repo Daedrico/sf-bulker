@@ -5,15 +5,13 @@ const { parse } = require('csv-parse/sync')
 const { stringify } = require('csv-stringify/sync')
 require('dotenv').config()
 
-const applyMapping = (csvContent, mapping) => {
+const applyMapping = (csvContent, mapping, skipFields = []) => {
+  const skip = new Set(skipFields)
+  const activeEntries = Object.entries(mapping).filter(([src]) => !skip.has(src))
   const rows = parse(csvContent, { columns: true, skip_empty_lines: true, trim: true })
-  const mapped = rows.map(row => {
-    const out = {}
-    for (const [src, dest] of Object.entries(mapping)) {
-      if (src in row) out[dest] = row[src]
-    }
-    return out
-  })
+  const mapped = rows.map(row =>
+    Object.fromEntries(activeEntries.filter(([src]) => src in row).map(([src, dest]) => [dest, row[src]]))
+  )
   return stringify(mapped, { header: true })
 }
 
@@ -50,14 +48,14 @@ const importData = async () => {
     console.log(state)
   })
 
-  const { filename, object, externalIdField, operation, mapping } = entry
+  const { filename, object, externalIdField, operation, mapping, skipFields } = entry
   console.log(`\nProcessing: ${filename} | object: ${object} | operation: ${operation}`)
 
   let sourceFile = `./source/${filename}`
 
   if (mapping && Object.keys(mapping).length > 0) {
     const csvContent = await readFile(sourceFile, 'utf-8')
-    const transformed = applyMapping(csvContent, mapping)
+    const transformed = applyMapping(csvContent, mapping, skipFields)
     sourceFile = `./source/.mapped_${filename}`
     await writeFile(sourceFile, transformed)
   }

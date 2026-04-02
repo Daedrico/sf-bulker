@@ -27,6 +27,10 @@
       "PersonEmail": "PersonEmail",
       "PersonMobilePhone": "PersonMobilePhone",
       "RecordType.Name": "RecordType.Name"
-    }
+    },
+    "skipFields": [
+      "CoffeeMatchProfileAromaticGroup__c",
+      "CoffeeMatchProfileRoasterColors__c"
+    ]
   }
 ]

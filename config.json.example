@@ -3,7 +3,7 @@
     "name": "account-upsert",
     "filename": "account.csv",
     "object": "Account",
-    "externalIdField": "LegacyCustomerCode__c",
+    "externalIdField": "ExternalId__c",
     "operation": "upsert",
     "mapping": {
       "AccountSource": "AccountSource",

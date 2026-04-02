@@ -71,9 +71,9 @@ const importData = async () => {
 
   let sourceFile = `./source/${filename}`
 
-  if (mapping && Object.keys(mapping).length > 0) {
+  if ((mapping && Object.keys(mapping).length > 0) || (skipFields && skipFields.length > 0)) {
     sourceFile = `./source/${filename.replace(/(\.[^.]+)$/, '_remapped$1')}`
-    await applyMapping(`./source/${filename}`, sourceFile, mapping, skipFields)
+    await applyMapping(`./source/${filename}`, sourceFile, mapping ?? {}, skipFields)
   }
 
   try {

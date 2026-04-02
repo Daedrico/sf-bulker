@@ -1,18 +1,32 @@
+require('dotenv').config()
+const { createReadStream, createWriteStream, readFileSync } = require('fs')
+const { mkdir, writeFile } = require('fs/promises')
+const { pipeline } = require('stream/promises')
+const { Transform } = require('stream')
+const { parse } = require('csv-parse')
+const { stringify } = require('csv-stringify')
 const { BulkAPI, MonitorJob } = require('client-sf-bulk2')
 const { getAccessToken } = require('./src/sf-oauth')
-const { readFile, writeFile, mkdir } = require('fs/promises')
-const { parse } = require('csv-parse/sync')
-const { stringify } = require('csv-stringify/sync')
-require('dotenv').config()
 
-const applyMapping = (csvContent, mapping, skipFields = []) => {
+const applyMapping = (srcFile, destFile, mapping, skipFields = []) => {
   const skip = new Set(skipFields)
   const activeEntries = Object.entries(mapping).filter(([src]) => !skip.has(src))
-  const rows = parse(csvContent, { columns: true, skip_empty_lines: true, trim: true })
-  const mapped = rows.map(row =>
-    Object.fromEntries(activeEntries.filter(([src]) => src in row).map(([src, dest]) => [dest, row[src]]))
+  const transform = new Transform({
+    objectMode: true,
+    transform(row, _, cb) {
+      const out = Object.fromEntries(
+        activeEntries.filter(([src]) => src in row).map(([src, dest]) => [dest, row[src]])
+      )
+      cb(null, out)
+    }
+  })
+  return pipeline(
+    createReadStream(srcFile),
+    parse({ columns: true, skip_empty_lines: true, trim: true }),
+    transform,
+    stringify({ header: true }),
+    createWriteStream(destFile)
   )
-  return stringify(mapped, { header: true })
 }
 
 const configName = process.argv[2]
@@ -23,7 +37,7 @@ if (!configName) {
 }
 
 const importData = async () => {
-  const configRaw = await readFile('./config.json', 'utf-8')
+  const configRaw = readFileSync('./config.json', 'utf-8')
   const entries = JSON.parse(configRaw)
 
   const entry = entries.find(e => e.name === configName)
@@ -54,10 +68,8 @@ const importData = async () => {
   let sourceFile = `./source/${filename}`
 
   if (mapping && Object.keys(mapping).length > 0) {
-    const csvContent = await readFile(sourceFile, 'utf-8')
-    const transformed = applyMapping(csvContent, mapping, skipFields)
-    sourceFile = `./source/.mapped_${filename}`
-    await writeFile(sourceFile, transformed)
+    sourceFile = `./source/${filename.replace(/(\.[^.]+)$/, '_remapped$1')}`
+    await applyMapping(`./source/${filename}`, sourceFile, mapping, skipFields)
   }
 
   try {

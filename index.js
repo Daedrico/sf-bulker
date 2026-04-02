@@ -1,13 +1,20 @@
 const { BulkAPI, MonitorJob } = require('client-sf-bulk2')
 const { getAccessToken } = require('./src/sf-oauth')
-const { readFile, writeFile, unlink, mkdir } = require('fs/promises')
+const { readFile, writeFile, mkdir } = require('fs/promises')
+const { parse } = require('csv-parse/sync')
+const { stringify } = require('csv-stringify/sync')
 require('dotenv').config()
 
 const applyMapping = (csvContent, mapping) => {
-  const lines = csvContent.split('\n')
-  const headers = lines[0].split(',').map(h => mapping[h.trim()] ?? h.trim())
-  lines[0] = headers.join(',')
-  return lines.join('\n')
+  const rows = parse(csvContent, { columns: true, skip_empty_lines: true, trim: true })
+  const mapped = rows.map(row => {
+    const out = {}
+    for (const [src, dest] of Object.entries(mapping)) {
+      if (src in row) out[dest] = row[src]
+    }
+    return out
+  })
+  return stringify(mapped, { header: true })
 }
 
 const configName = process.argv[2]
@@ -47,14 +54,12 @@ const importData = async () => {
   console.log(`\nProcessing: ${filename} | object: ${object} | operation: ${operation}`)
 
   let sourceFile = `./source/${filename}`
-  let tempFile = null
 
   if (mapping && Object.keys(mapping).length > 0) {
     const csvContent = await readFile(sourceFile, 'utf-8')
     const transformed = applyMapping(csvContent, mapping)
-    tempFile = `./source/.tmp_${filename}`
-    await writeFile(tempFile, transformed)
-    sourceFile = tempFile
+    sourceFile = `./source/.mapped_${filename}`
+    await writeFile(sourceFile, transformed)
   }
 
   try {
@@ -85,8 +90,6 @@ const importData = async () => {
     }
   } catch (e) {
     console.error(`Error processing ${filename}:`, e)
-  } finally {
-    if (tempFile) await unlink(tempFile).catch(() => { })
   }
 }
 

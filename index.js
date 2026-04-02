@@ -1,56 +1,79 @@
-import { BulkAPI, MonitorJob } from 'client-sf-bulk2'
-import { SF_PassConnect } from 'client-sf-oauth'
-import { writeFile, mkdir } from 'fs/promises'
+const { BulkAPI, MonitorJob } = require('client-sf-bulk2')
+const { SF_PassConnect } = require('client-sf-oauth')
+const { readFile, writeFile, unlink, mkdir } = require('fs/promises')
 
-const fileName = process.argv[2]
-const objectName = process.argv[3]
-const externalIdField = process.argv[4]
+const applyMapping = (csvContent, mapping) => {
+  const lines = csvContent.split('\n')
+  const headers = lines[0].split(',').map(h => mapping[h.trim()] ?? h.trim())
+  lines[0] = headers.join(',')
+  return lines.join('\n')
+}
 
-if (!fileName || !objectName || !externalIdField) {
-  console.error('Usage: npm run import -- <nome-file> <object> <externalIdField>')
+const configName = process.argv[2]
+
+if (!configName) {
+  console.error('Usage: npm run import -- <name>')
   process.exit(1)
 }
 
-console.log(`File name: ${fileName}`)
-console.log(`Object: ${objectName}`)
-console.log(`External ID field: ${externalIdField}`)
+const importData = async () => {
+  const configRaw = await readFile('./config.json', 'utf-8')
+  const entries = JSON.parse(configRaw)
 
-async function importData() {
+  const entry = entries.find(e => e.name === configName)
+  if (!entry) {
+    console.error(`No config entry found with name: "${configName}"`)
+    process.exit(1)
+  }
+
   const connection = new SF_PassConnect({
     clientId: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     host: process.env.URL
   })
 
+  const result = await connection.requestAccessToken()
+
+  const bulkAPI = new BulkAPI({
+    accessToken: result.data.access_token,
+    apiVersion: '64.0',
+    instanceUrl: result.data.instance_url
+  })
+
+  MonitorJob.on('monitoring', (state) => {
+    console.log(state)
+  })
+
+  const { filename, object, externalIdField, operation, mapping } = entry
+  console.log(`\nProcessing: ${filename} | object: ${object} | operation: ${operation}`)
+
+  let sourceFile = `./source/${filename}`
+  let tempFile = null
+
+  if (mapping && Object.keys(mapping).length > 0) {
+    const csvContent = await readFile(sourceFile, 'utf-8')
+    const transformed = applyMapping(csvContent, mapping)
+    tempFile = `./source/.tmp_${filename}`
+    await writeFile(tempFile, transformed)
+    sourceFile = tempFile
+  }
+
   try {
-    const result = await connection.requestAccessToken()
-
-    const bulkAPI = new BulkAPI({
-      accessToken: result.data.access_token,
-      apiVersion: '64.0',
-      instanceUrl: result.data.instance_url
-    })
-
     const jobRequest = {
-      'object': objectName,
-      'operation': 'upsert',
+      'object': object,
+      'operation': operation,
       'externalIdFieldName': externalIdField
     }
-    const response = await bulkAPI.createAndWaitJobResult(jobRequest, `./source/${fileName}`)
-    console.log(response)
 
-    // Use the MonitorJob Event Emitter to get the status of the job
-    MonitorJob.on('monitoring', (state) => {
-      //Do something with the job state
-      console.log(state)
-    })
+    const response = await bulkAPI.createAndWaitJobResult(jobRequest, sourceFile)
+    console.log(response)
 
     const finalStateJob = await bulkAPI.waitJobEnd(response.id)
 
     if (finalStateJob === 'JobComplete') {
       const successfulRecords = await bulkAPI.getJobSuccesfulResults(response.id)
       const failedRecords = await bulkAPI.getJobFailedResults(response.id)
-      const baseName = fileName.replace(/\.[^.]+$/, '')
+      const baseName = filename.replace(/\.[^.]+$/, '')
       const timestamp = new Date().toISOString().replace(/:/g, '-').replace(/\..+/, '')
       await mkdir('./output', { recursive: true })
       await writeFile(`./output/${baseName}_success_${timestamp}.csv`, successfulRecords)
@@ -58,7 +81,9 @@ async function importData() {
       console.log(`Results saved to output/${baseName}_*_${timestamp}.csv`)
     }
   } catch (e) {
-    console.log(e)
+    console.error(`Error processing ${filename}:`, e)
+  } finally {
+    if (tempFile) await unlink(tempFile).catch(() => { })
   }
 }
 

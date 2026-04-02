@@ -11,7 +11,8 @@
     "import": "node index.js"
   },
   "dependencies": {
-    "client-sf-bulk2": "^0.8.1"
+    "client-sf-bulk2": "^0.8.1",
+    "dotenv": "^17.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.31.0",

@@ -1,6 +1,7 @@
 const { BulkAPI, MonitorJob } = require('client-sf-bulk2')
-const { SF_PassConnect } = require('client-sf-oauth')
+const { getAccessToken } = require('./src/sf-oauth')
 const { readFile, writeFile, unlink, mkdir } = require('fs/promises')
+require('dotenv').config()
 
 const applyMapping = (csvContent, mapping) => {
   const lines = csvContent.split('\n')
@@ -26,18 +27,16 @@ const importData = async () => {
     process.exit(1)
   }
 
-  const connection = new SF_PassConnect({
+  const token = await getAccessToken({
     clientId: process.env.CLIENT_ID,
     clientSecret: process.env.CLIENT_SECRET,
     host: process.env.URL
   })
 
-  const result = await connection.requestAccessToken()
-
   const bulkAPI = new BulkAPI({
-    accessToken: result.data.access_token,
+    accessToken: token.access_token,
     apiVersion: '64.0',
-    instanceUrl: result.data.instance_url
+    instanceUrl: token.instance_url
   })
 
   MonitorJob.on('monitoring', (state) => {

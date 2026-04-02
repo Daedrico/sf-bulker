@@ -19,7 +19,7 @@ const applyMapping = (srcFile, destFile, mapping, skipFields = []) => {
       const out = Object.fromEntries(
         Object.entries(row)
           .filter(([key]) => !skip.has(key))
-          .map(([key, value]) => [activeMapping[key] ?? key, value])
+          .map(([key, value]) => [activeMapping[key] ?? key, typeof value === 'string' ? value.replace(/\r/g, '') : value])
       )
       cb(null, out)
     }
@@ -28,7 +28,7 @@ const applyMapping = (srcFile, destFile, mapping, skipFields = []) => {
     createReadStream(srcFile),
     parse({ columns: true, skip_empty_lines: true, trim: true }),
     transform,
-    stringify({ header: true }),
+    stringify({ header: true, record_delimiter: '\n' }),
     createWriteStream(destFile)
   )
 }

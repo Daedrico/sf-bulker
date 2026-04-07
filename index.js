@@ -52,6 +52,10 @@ const importData = async () => {
     process.exit(1)
   }
 
+  const { filename, object, externalIdField, operation, mapping, skipFields } = entry
+  let sourceFile = `./source/${filename}`
+  console.log(chalk.bold.blue(`Processing: ${filename}`) + chalk.gray(` | object: ${object} | operation: ${operation}`))
+  console.log(chalk.green(`Source file: ${sourceFile}`) + chalk.gray(` | Operation: ${operation} | Object: ${object} | External ID: ${externalIdField ?? 'N/A'}`))
   console.log(chalk.magenta(`Target URL: ${process.env.URL}`))
 
   const rl = createInterface({ input: process.stdin, output: process.stdout })
@@ -83,11 +87,6 @@ const importData = async () => {
     )
   })
 
-  const { filename, object, externalIdField, operation, mapping, skipFields } = entry
-  console.log('\n' + chalk.bold.blue(`Processing: ${filename}`) + chalk.gray(` | object: ${object} | operation: ${operation}`))
-
-  let sourceFile = `./source/${filename}`
-
   if ((mapping && Object.keys(mapping).length > 0) || (skipFields && skipFields.length > 0)) {
     sourceFile = `./source/${filename.replace(/(\.[^.]+)$/, '_remapped$1')}`
     await applyMapping(`./source/${filename}`, sourceFile, mapping ?? {}, skipFields)
@@ -101,7 +100,6 @@ const importData = async () => {
       'externalIdFieldName': externalIdField,
       'lineEnding': 'LF'
     }
-    console.log(chalk.gray(`Source file: ${sourceFile} | Operation: ${operation} | Object: ${object} | External ID: ${externalIdField ?? 'N/A'}`))
 
     const response = await bulkAPI.createAndWaitJobResult(jobRequest, sourceFile)
 

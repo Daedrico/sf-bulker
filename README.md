@@ -94,6 +94,8 @@ When `mapping` or `skipFields` are defined, a remapped file is generated at `sou
 ```
 Processing: export_historique_products.csv | object: Product2 | operation: upsert
 Source file: ./source/export_historique_products_remapped.csv | Operation: upsert | Object: Product2 | External ID: ExternalId__c
+Target URL: https://your-instance.my.salesforce.com
+Proceed? (y/yes to confirm): y
 Job 750S900000RIYNAIA5 | State: UploadComplete | Processed: 0     | Failed: 0
 Job 750S900000RIYNAIA5 | State: InProgress     | Processed: 4200  | Failed: 412
 Job 750S900000RIYNAIA5 | State: InProgress     | Processed: 13298 | Failed: 1128

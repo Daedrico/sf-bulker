@@ -1,6 +1,7 @@
 import 'dotenv/config'
 import { createReadStream, createWriteStream, readFileSync } from 'fs'
 import { mkdir, writeFile } from 'fs/promises'
+import { createInterface } from 'readline'
 import { pipeline } from 'stream/promises'
 import { Transform } from 'stream'
 import { parse } from 'csv-parse'
@@ -49,6 +50,16 @@ const importData = async () => {
   if (!entry) {
     console.error(chalk.red(`No config entry found with name: "${configName}"`))
     process.exit(1)
+  }
+
+  console.log(chalk.magenta(`Target URL: ${process.env.URL}`))
+
+  const rl = createInterface({ input: process.stdin, output: process.stdout })
+  const answer = await new Promise(resolve => rl.question(chalk.yellow('Proceed? (y/yes to confirm): '), resolve))
+  rl.close()
+  if (answer.trim().toLowerCase() !== 'y' && answer.trim().toLowerCase() !== 'yes') {
+    console.log(chalk.red('Aborted.'))
+    process.exit(0)
   }
 
   const token = await getAccessToken({

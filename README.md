@@ -23,7 +23,7 @@ Built with native Node.js ESM modules — no Salesforce SDK required.
    URL=https://your-instance.my.salesforce.com
    ```
 
-3. Copy `config.json.example` to `config.json` and configure your import entries (see [Configuration](#configuration)).
+3. Copy `config/config.json.example` to `config/config.json` and configure your import entries (see [Configuration](#configuration)).
 
 4. Place your CSV source files in the `source/` directory.
 
@@ -51,9 +51,12 @@ index.js              # Entry point
 src/
   sf-bulk.js          # Salesforce Bulk API v2 client (native https)
   sf-oauth.js         # Salesforce OAuth2 client credentials flow
+config/
+  config.json         # Import entries (gitignored, see config.json.example)
+  config.json.example # Example configuration
+  functions.js        # Custom row transform functions
 source/               # Input CSV files
 output/               # Result CSVs written after each job
-config.json           # Import entries (gitignored, see config.json.example)
 ```
 
 ## Configuration
@@ -69,6 +72,7 @@ config.json           # Import entries (gitignored, see config.json.example)
 | `externalIdField` | upsert only | API name of the external ID field |
 | `mapping` | no | Object mapping source column names to target field names |
 | `skipFields` | no | Array of source column names to exclude from the upload |
+| `rowTransform` | no | Name of a function exported from `config/functions.js` to apply to each row after mapping |
 
 **Example:**
 ```json
@@ -82,12 +86,26 @@ config.json           # Import entries (gitignored, see config.json.example)
     "mapping": {
       "RecordType.Name": "RecordType.Name"
     },
-    "skipFields": ["AccountSource"]
+    "skipFields": ["AccountSource"],
+    "rowTransform": "remapAccount"
   }
 ]
 ```
 
-When `mapping` or `skipFields` are defined, a remapped file is generated at `source/<filename>_remapped.<ext>` before the upload. Embedded `\r` characters in field values are automatically stripped to prevent Salesforce Bulk API line ending errors.
+When `mapping`, `skipFields`, or `rowTransform` are defined, a remapped file is generated at `source/<filename>_remapped.<ext>` before the upload. Embedded `\r` characters in field values are automatically stripped to prevent Salesforce Bulk API line ending errors.
+
+### Row transform functions
+
+Define custom per-row logic in `config/functions.js` and reference it by name via `rowTransform`. Each function receives the already-mapped row object and must return the (modified) row:
+
+```js
+export default {
+  remapAccount: (row) => {
+    row.Name += ' (imported)'
+    return row
+  }
+}
+```
 
 ## Example output
 

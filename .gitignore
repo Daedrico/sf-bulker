@@ -2,4 +2,5 @@ node_modules
 .env
 source/**
 output/**
-config.json
+config/config.json
+config/functions.js

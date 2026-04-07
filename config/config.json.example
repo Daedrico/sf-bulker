@@ -6,8 +6,9 @@
     "externalIdField": "ExternalId__c",
     "operation": "upsert",
     "mapping": {
-      "RecordType.Name": "RecordType.Name"
+      "SourceColumnName": "TargetFieldName__c"
     },
-    "skipFields": ["AccountSource"]
+    "skipFields": ["ColumnToExclude"],
+    "rowTransform": "myFunctionName"
   }
 ]

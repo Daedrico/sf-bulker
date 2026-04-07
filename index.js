@@ -9,23 +9,27 @@ import { stringify } from 'csv-stringify'
 import chalk from 'chalk'
 import { BulkAPI, MonitorJob } from './src/sf-bulk.js'
 import { getAccessToken } from './src/sf-oauth.js'
+import f from './config/functions.js'
 
-const applyMapping = (srcFile, destFile, mapping, skipFields = []) => {
+const applyMapping = (srcFile, destFile, mapping, skipFields = [], rowTransformFn = null) => {
   const skip = new Set(skipFields)
   const activeMapping = Object.fromEntries(
     Object.entries(mapping).filter(([src]) => !skip.has(src))
   )
+
   const transform = new Transform({
     objectMode: true,
     transform(row, _, cb) {
-      const out = Object.fromEntries(
+      let out = Object.fromEntries(
         Object.entries(row)
           .filter(([key]) => !skip.has(key))
           .map(([key, value]) => [activeMapping[key] ?? key, typeof value === 'string' ? value.replace(/\r/g, '') : value])
       )
+      if (rowTransformFn) out = rowTransformFn(out)
       cb(null, out)
     }
   })
+
   return pipeline(
     createReadStream(srcFile),
     parse({ columns: true, skip_empty_lines: true, trim: true }),
@@ -43,7 +47,7 @@ if (!configName) {
 }
 
 const importData = async () => {
-  const configRaw = readFileSync('./config.json', 'utf-8')
+  const configRaw = readFileSync('./config/config.json', 'utf-8')
   const entries = JSON.parse(configRaw)
 
   const entry = entries.find(e => e.name === configName)
@@ -52,10 +56,10 @@ const importData = async () => {
     process.exit(1)
   }
 
-  const { filename, object, externalIdField, operation, mapping, skipFields } = entry
+  const { filename, object, externalIdField, operation, mapping, skipFields, rowTransform } = entry
   let sourceFile = `./source/${filename}`
   console.log(chalk.bold.blue(`Processing: ${filename}`) + chalk.gray(` | object: ${object} | operation: ${operation}`))
-  console.log(chalk.green(`Source file: ${sourceFile}`) + chalk.gray(` | Operation: ${operation} | Object: ${object} | External ID: ${externalIdField ?? 'N/A'}`))
+  console.log(chalk.green(`Source file: ${sourceFile}`) + chalk.gray(` | Operation: ${operation} | Object: ${object} | External ID: ${externalIdField ?? 'N/A'}`) + (rowTransform ? chalk.gray(' | Row transform: ') + chalk.cyan(rowTransform) : ''))
   console.log(chalk.magenta(`Target URL: ${process.env.URL}`))
 
   const rl = createInterface({ input: process.stdin, output: process.stdout })
@@ -87,9 +91,14 @@ const importData = async () => {
     )
   })
 
-  if ((mapping && Object.keys(mapping).length > 0) || (skipFields && skipFields.length > 0)) {
+  if ((mapping && Object.keys(mapping).length > 0) || (skipFields && skipFields.length > 0) || rowTransform) {
+    const rowTransformFn = rowTransform ? f[rowTransform] : null
+    if (rowTransform && !rowTransformFn) {
+      console.error(chalk.red(`Unknown rowTransform function: "${rowTransform}"`))
+      process.exit(1)
+    }
     sourceFile = `./source/${filename.replace(/(\.[^.]+)$/, '_remapped$1')}`
-    await applyMapping(`./source/${filename}`, sourceFile, mapping ?? {}, skipFields)
+    await applyMapping(`./source/${filename}`, sourceFile, mapping ?? {}, skipFields, rowTransformFn)
   }
 
   try {

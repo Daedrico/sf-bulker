@@ -1,0 +1,6 @@
+export default {
+  myFunctionName: (row) => {
+    // do something with the row
+    return row
+  }
+}

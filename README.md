@@ -96,12 +96,35 @@ When `mapping`, `skipFields`, or `rowTransform` are defined, a remapped file is 
 
 ### Row transform functions
 
-Define custom per-row logic in `config/functions.js` and reference it by name via `rowTransform`. Each function receives the already-mapped row object and must return the (modified) row:
+Row transform functions let you apply arbitrary per-row logic after the column mapping step. They are useful for:
+
+- **Sanitising values** — trim whitespace, normalise casing, remove invalid characters
+- **Recalculating fields** — derive a field value from one or more other fields
+- **Conditional overrides** — change a value only when a certain condition is met
+- **Concatenation / splitting** — merge multiple source columns into one target field, or vice-versa
+- **Default values** — fill in missing or empty fields with a fallback
+
+Define your functions in `config/functions.js` and reference one by name via `rowTransform`. Each function receives the already-mapped row object and must return the (modified) row:
 
 ```js
 export default {
+  // Simple example: append a suffix to the Name field
   remapAccount: (row) => {
     row.Name += ' (imported)'
+    return row
+  },
+
+  // Sanitise and recalculate
+  cleanProduct: (row) => {
+    // Trim whitespace and normalise to uppercase
+    row.ProductCode = row.ProductCode?.trim().toUpperCase()
+
+    // Derive a combined description field
+    row.Description = `${row.Family ?? ''} – ${row.Name ?? ''}`.trim()
+
+    // Apply a default value when the field is empty
+    if (!row.IsActive) row.IsActive = 'true'
+
     return row
   }
 }

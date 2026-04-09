@@ -4,6 +4,34 @@ A CLI tool for importing CSV data into Salesforce using the Bulk API v2.
 
 Built with native Node.js ESM modules — no Salesforce SDK required.
 
+## Why sf-bulker?
+
+Salesforce Data Loader works fine for a one-off import, but it becomes painful for repeated migration work — the kind where you're constantly tweaking mappings, fixing source data, and re-running the same job until everything lands correctly.
+
+Every run means navigating the same wizard, re-specifying or re-loading your field mapping, confirming the same options. The GUI is designed around occasional use; it fights you when the process is iterative.
+
+sf-bulker takes a different approach: the entire job is described in a JSON config file. Field mappings, the target object, the operation, any row-level transforms — all stored as code, versioned alongside your project, and reproducible with a single command. For data migration work where fine-tuning is part of the process, that's a much better fit.
+
+## Specific pain points addressed
+
+These are recurring friction points with Data Loader that sf-bulker directly solves:
+
+**Java dependency.** Data Loader requires a specific JDK version to be installed and kept in sync with each new release. sf-bulker only needs Node.js, which is already present in most development environments.
+
+**Config not under version control.** In Data Loader, field mappings and operation settings live inside the application's own storage — not in your project. sf-bulker keeps everything in `config.json` and `functions.js`, which you can commit to git alongside your source files and share with your team.
+
+**Interactive login on every session.** Data Loader prompts for OAuth authentication in a browser each time. sf-bulker uses the OAuth 2.0 client credentials flow: credentials live in a `.env` file, no browser required, and the tool is safe to run unattended.
+
+**No field mapping persistence across runs.** With Data Loader you re-specify or re-load your `.sdl` mapping file every time. sf-bulker reads the mapping from `config.json` — define it once, run it as many times as needed.
+
+**No per-row data transformation.** Data Loader loads records exactly as they appear in the source CSV. sf-bulker lets you attach a JavaScript function to any import entry via `rowTransform`, giving you full control to clean, remap, recalculate, or apply conditional logic on each row before it reaches Salesforce.
+
+**No field exclusion.** Excluding unwanted source columns in Data Loader means either editing the CSV or building a mapping that omits them. sf-bulker has a `skipFields` array for exactly this.
+
+**Not easily scriptable.** Data Loader has a command-line interface, but it requires managing a separate configuration directory and a Java classpath. sf-bulker runs with a single `npm run import -- <name>` command.
+
+> sf-bulker is intentionally scope-limited: it handles CSV **imports** only and does not support SOQL exports or a graphical interface. If you need those, Data Loader remains the right tool.
+
 ## Prerequisites
 
 - Node.js 18+

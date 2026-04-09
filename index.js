@@ -97,7 +97,8 @@ const importData = async () => {
       console.error(chalk.red(`Unknown rowTransform function: "${rowTransform}"`))
       process.exit(1)
     }
-    sourceFile = `./source/${filename.replace(/(\.[^.]+)$/, '_remapped$1')}`
+    sourceFile = `./source/remapped/${filename}`
+    await mkdir('./source/remapped', { recursive: true })
     await applyMapping(`./source/${filename}`, sourceFile, mapping ?? {}, skipFields, rowTransformFn)
   }
 
